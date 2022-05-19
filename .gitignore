@@ -1,0 +1,8 @@
+.env*
+!.env.demo.*
+.idea/
+
+data
+
+web/rest/migrations/*
+!web/rest/migrations/__init__.py

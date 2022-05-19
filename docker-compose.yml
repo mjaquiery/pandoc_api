@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+
+  db:
+      image: postgres
+      ports:
+        - "5432:5432"  # dev exposure
+      volumes:
+        - ./data/db:/var/lib/postgresql/data
+      env_file:
+        - .env.postgres
+
+  redis:
+    image: redis:alpine
+    expose:
+      - 6379
+    volumes:
+      - 'redis_data:/var/lib/redis/data'
+
+  web:
+    build: ./web
+    command: ["./init.sh", "db", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - ./web:/web
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.postgres
+      - .env.django
+    depends_on:
+      - db
+      - redis
+
+  # celery worker
+  worker:
+    build:
+      context: ./web
+      dockerfile: Dockerfile-backend
+    env_file:
+      - .env.postgres
+      - .env.django
+    environment:
+      DJANGO_BACKEND_WORKER: "True"
+    command: [ "celery", "--app=pandoc_api", "worker", "--concurrency=10", "--hostname=worker@%h", "--loglevel=INFO" ]
+#    command: tail -F anything
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+
+volumes:
+  redis_data:
