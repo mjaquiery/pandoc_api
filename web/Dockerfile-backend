@@ -5,11 +5,14 @@ ENV PYTHONUNBUFFERED=1
 
 # Install postgresql-client for healthchecking
 RUN apt-get update && \
-    apt-get install -y postgresql-client && \
+    apt-get install -y postgresql-client pandoc && \
     apt-get autoremove && \
     apt-get autoclean
 
+COPY requirements.txt /requirements.txt
+RUN pip install -r /requirements.txt
+
+RUN useradd --home-dir /worker --user-group --no-create-home worker
+USER worker
 WORKDIR /worker
-COPY requirements.txt /worker/
-RUN pip install -r requirements.txt
 COPY . /worker/

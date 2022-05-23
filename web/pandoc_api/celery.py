@@ -1,25 +1,20 @@
-"""
-https://docs.celeryproject.org/en/stable/django/first-steps-with-django.html
-"""
 import os
 
 from celery import Celery
 
-from django.conf import settings
-
-# this code copied from manage.py
-# set the default Django settings module for the 'celery' app.
+# Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pandoc_api.settings')
 
-# you can change the name here
-app = Celery("pandoc_api")
+app = Celery('pandoc_api')
 
-# read config from Django settings, the CELERY namespace would make celery
-# config keys have `CELERY` prefix
+# Using a string here means the worker doesn't have to serialize
+# the configuration object to child processes.
+# - namespace='CELERY' means all celery-related configuration keys
+#   should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# discover and load tasks.py in django apps
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+# Load task modules from all registered Django apps.
+app.autodiscover_tasks()
 
 
 @app.task(bind=True)

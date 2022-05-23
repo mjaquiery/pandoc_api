@@ -1,10 +1,15 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
-from .serializers import JobSerializer
 
-from .models import Job
-# from .tasks import wait_5
+import logging
+
+from .serializers import JobSerializer, DocumentSerializer, OutputSerializer
+from .models import Job, Document, Output
+from .tasks import convert_doc
+
+
+logger = logging.getLogger(__file__)
 
 
 @csrf_exempt
@@ -13,7 +18,6 @@ def job_list(request):
     List all code snippets, or create a new snippet.
     """
     if request.method == 'GET':
-        # wait_5.delay()
         jobs = Job.objects.all()
         serializer = JobSerializer(jobs, many=True)
         return JsonResponse(serializer.data, safe=False)
@@ -21,8 +25,10 @@ def job_list(request):
     elif request.method == 'POST':
         data = JSONParser().parse(request)
         serializer = JobSerializer(data=data)
+        logger.debug(serializer.initial_data)
         if serializer.is_valid():
             serializer.save()
+            convert_doc.delay(serializer.data['id'])
             return JsonResponse(serializer.data, status=201)
         return JsonResponse(serializer.errors, status=400)
 
