@@ -9,10 +9,7 @@ RUN apt-get update && \
     apt-get autoremove && \
     apt-get autoclean
 
+WORKDIR /worker
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-
-RUN useradd --home-dir /worker --user-group --no-create-home worker
-USER worker
-WORKDIR /worker
 COPY . /worker/

@@ -1,59 +1,111 @@
-from django.http import HttpResponse, JsonResponse
+import django.utils.timezone
+from django.views.generic import View
+from django.http import HttpRequest, HttpResponse
+from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
+from rest_framework.serializers import ValidationError
 
+import rest_framework.views
 import logging
+import os
+import mimetypes
 
-from .serializers import JobSerializer, DocumentSerializer, OutputSerializer
-from .models import Job, Document, Output
+from .serializers import JobSerializer, OutputSerializer
+from .models import Job, Document, Output, Format, Status
 from .tasks import convert_doc
 
 
 logger = logging.getLogger(__file__)
 
 
-@csrf_exempt
-def job_list(request):
+class ListJobs(rest_framework.views.APIView):
     """
-    List all code snippets, or create a new snippet.
+    Jobs link a document to an output. They will take some time to complete.
     """
-    if request.method == 'GET':
+    def get(self, request: HttpRequest, **kwargs) -> Response:
+        """
+        View all jobs submitted to the system.
+        TODO: paginate
+        """
+        output = []
         jobs = Job.objects.all()
-        serializer = JobSerializer(jobs, many=True)
-        return JsonResponse(serializer.data, safe=False)
+        for job in jobs:
+            data = {
+                **JobSerializer(job).data,
+                'output': OutputSerializer(Output.objects.filter(job_id=job.id), many=True).data
+            }
+            for o in data['output']:
+                o.pop('job')
+            output.append(data)
 
-    elif request.method == 'POST':
+        return Response(output)
+
+    @csrf_exempt
+    def post(self, request: HttpRequest, **kwargs) -> Response:
+        """
+        Submit a job to the system.
+        """
         data = JSONParser().parse(request)
-        serializer = JobSerializer(data=data)
-        logger.debug(serializer.initial_data)
-        if serializer.is_valid():
-            serializer.save()
-            convert_doc.delay(serializer.data['id'])
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
 
+        # Create document
+        content = data['content']
+        document, doc_created = Document.objects.get_or_create(content=bytes(content, 'utf-8'))
+        if doc_created:
+            logger.debug(f"Created {document}.")
+        else:
+            logger.debug(f"Using existing {document}.")
 
-def job_detail(request, pk):
-    """
-    Retrieve, update or delete a code snippet.
-    """
-    try:
-        job = Job.objects.get(pk=pk)
-    except Job.DoesNotExist:
-        return HttpResponse(status=404)
+        # Create job
+        output_format = data['format']
+        formats = [fmt.value for fmt in Format]
+        if output_format not in formats:
+            raise ValidationError((
+                f"Unsupported format requested ({output_format}). "
+                f"Supported formats: {', '.join(formats)}."
+            ))
 
-    if request.method == 'GET':
+        job, job_created = Job.objects.get_or_create(document_id=document.id, format=output_format)
+        if job_created or job.status == Status.ERRORED.value:
+            logger.debug(f"Created {job}." if job_created else f"Retrying errored {job}.")
+            convert_doc.delay(job.id)
+        else:
+            logger.debug(f"Returning existing {job}.")
         serializer = JobSerializer(job)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data, status=201)
 
-    # elif request.method == 'PUT':
-    #     data = JSONParser().parse(request)
-    #     serializer = SnippetSerializer(snippet, data=data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return JsonResponse(serializer.data)
-    #     return JsonResponse(serializer.errors, status=400)
-    #
-    # elif request.method == 'DELETE':
-    #     snippet.delete()
-    #     return HttpResponse(status=204)
+
+class ViewJob(rest_framework.views.APIView):
+    def get(self, request: HttpRequest, job_id, **kwargs) -> Response:
+        """
+        View the full details for a single job.
+        """
+        try:
+            job = Job.objects.get(id=job_id)
+        except Job.DoesNotExist:
+            return Response(status=404)
+
+        serializer = JobSerializer(job)
+        return Response({
+            **serializer.data,
+            'output': OutputSerializer(Output.objects.filter(job=job), many=True)
+        })
+
+
+class DownloadOutput(View):
+    def get(self, request: HttpRequest, job_id, filename, **kwargs) -> HttpResponse:
+        """
+        Expose a file for downloading and record the download.
+        """
+        path = os.path.join("/outputs", f"job_{job_id}", filename)
+        output = Output.objects.get(file_path=path)
+        output.time_last_downloaded = django.utils.timezone.now()
+        output.download_count = output.download_count + 1
+        output.save()
+
+        file = open(path, 'rb')
+        mime_type, _ = mimetypes.guess_type(path)
+        response = HttpResponse(file, content_type=mime_type)
+        # Set the HTTP header for sending to browser
+        response['Content-Disposition'] = f"attachment; filename={os.path.basename(path)}"
+        return response

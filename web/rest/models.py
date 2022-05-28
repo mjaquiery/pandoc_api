@@ -6,6 +6,7 @@ from enum import Enum
 
 logger = logging.getLogger(__file__)
 
+LENGTH_STATUS = 30
 LENGTH_HASH = 512
 LENGTH_MESSAGE = 1024
 
@@ -30,14 +31,11 @@ class Document(models.Model):
     time_created = models.DateTimeField(null=True)
     time_updated = models.DateTimeField(null=True)
 
-    hash = models.CharField(null=False, max_length=LENGTH_HASH, unique=True)
-    content = models.BinaryField(null=False)
+    hash = models.CharField(null=True, max_length=LENGTH_HASH)
+    content = models.BinaryField(null=False, unique=True)
 
     def save(self, *args, **kwargs):
-        # Recalculate hash
-        if type(self.content) is not bytes:
-            self.content = bytes(self.content, 'utf8')
-
+        # Calculate hash
         self.hash = hashlib.sha512(self.content).hexdigest()
 
         # Update timestamps
@@ -46,6 +44,9 @@ class Document(models.Model):
         self.time_updated = timezone.now()
 
         super(Document, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Document {self.id}: {len(self.content)}bytes (SHA_512: {self.hash})"
 
 
 class Job(models.Model):
@@ -58,9 +59,10 @@ class Job(models.Model):
 
     time_start = models.DateTimeField(null=True)
     time_end = models.DateTimeField(null=True)
-    status = models.SmallIntegerField(
+    status = models.CharField(
         choices=[(s.value, s.name) for s in Status],
-        default=Status.PENDING.value
+        default=Status.PENDING.value,
+        max_length=LENGTH_STATUS
     )
     message = models.CharField(null=True, max_length=LENGTH_MESSAGE)
 

@@ -23,6 +23,7 @@ services:
     command: ["./init.sh", "db", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
       - ./web:/web
+      - ./data/outputs:/outputs
     ports:
       - "8000:8000"
     env_file:
@@ -46,6 +47,7 @@ services:
 #    command: tail -F anything
     volumes:
       - .:/app
+      - ./data/outputs:/outputs
     depends_on:
       - redis
       - db
