@@ -10,6 +10,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('jobs/', views.ListJobs.as_view(), name='jobs'),
     path('jobs/<int:job_id>/', views.ViewJob.as_view(), name='job'),
-    path('download/job_<int:job_id>/<str:filename>', views.DownloadOutput.as_view(), name='download'),
+    path('outputs/job_<int:job_id>/<str:filename>', views.DownloadOutput.as_view(), name='download'),
+    path('formats/', views.ListFormats.as_view(), name='formats'),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

@@ -88,7 +88,7 @@ class ViewJob(rest_framework.views.APIView):
         serializer = JobSerializer(job)
         return Response({
             **serializer.data,
-            'output': OutputSerializer(Output.objects.filter(job=job), many=True)
+            'output': OutputSerializer(Output.objects.filter(job=job), many=True).data
         })
 
 
@@ -109,3 +109,11 @@ class DownloadOutput(View):
         # Set the HTTP header for sending to browser
         response['Content-Disposition'] = f"attachment; filename={os.path.basename(path)}"
         return response
+
+
+class ListFormats(rest_framework.views.APIView):
+    def get(self, request: HttpRequest, **kwargs) -> Response:
+        """
+        List the supported formats in which documents can be requested.
+        """
+        return Response([f.value for f in Format])
