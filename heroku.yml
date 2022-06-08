@@ -1,0 +1,12 @@
+setup:
+  addons:
+    - plan: heroku-postgresql
+      as: db
+    - plan: herok-redis
+      as: redis
+
+build:
+  web: ./web/Dockerfile
+
+run:
+  web: ./init.sh db -- python manage.py runserver 0.0.0.0:8000
