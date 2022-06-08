@@ -15,8 +15,8 @@ RUN apt-get update && \
     apt-get autoremove && \
     apt-get autoclean
 
-WORKDIR /worker
+WORKDIR /web
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-COPY . /worker/
+COPY . /web/
 CMD mkdir /outputs
