@@ -29,28 +29,11 @@ services:
     env_file:
       - .env.postgres
       - .env.django
-    depends_on:
-      - db
-      - redis
-
-  # celery worker
-  worker:
-    build:
-      context: ./web
-      dockerfile: Dockerfile-backend
-    env_file:
-      - .env.postgres
-      - .env.django
     environment:
       DJANGO_BACKEND_WORKER: "True"
-    command: [ "celery", "--app=pandoc_api", "worker", "--concurrency=10", "--hostname=worker@%h", "--loglevel=INFO" ]
-#    command: tail -F anything
-    volumes:
-      - .:/app
-      - ./data/outputs:/outputs
     depends_on:
-      - redis
       - db
+      - redis
 
 volumes:
   redis_data:
