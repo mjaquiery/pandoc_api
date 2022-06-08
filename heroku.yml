@@ -11,4 +11,3 @@ build:
 
 run:
   web: /web/init.sh
-  worker: celery --app=pandoc_api worker --hostname=worker@%h --loglevel=INFO

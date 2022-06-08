@@ -19,7 +19,7 @@ python manage.py makemigrations
 python manage.py migrate
 
 #>&2 echo "Launching celery workers"
-#celery --app=pandoc_api worker --hostname=worker@%h --loglevel=INFO --detach
+celery --app=pandoc_api worker --hostname=worker@%h --loglevel=INFO --detach
 
 #>&2 echo "Initalisation complete - running command $*"
 #exec "$@"
