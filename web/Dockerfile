@@ -5,11 +5,17 @@ ENV PYTHONUNBUFFERED=1
 
 # Install postgresql-client for healthchecking
 RUN apt-get update && \
-    apt-get install -y postgresql-client && \
+    apt-get install -y \
+    	postgresql-client \
+    	pandoc  \
+    	texlive-latex-base \
+    	texlive-fonts-recommended \
+    	texlive-fonts-extra \
+    	texlive-latex-extra && \
     apt-get autoremove && \
     apt-get autoclean
 
-WORKDIR /web
+WORKDIR /worker
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-COPY . /web/
+COPY . /worker/
