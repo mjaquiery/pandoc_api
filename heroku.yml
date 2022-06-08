@@ -10,4 +10,4 @@ build:
     web: web/Dockerfile
 
 run:
-  web: /web/init.sh
+  web: bash /web/init.sh
