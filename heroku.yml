@@ -6,7 +6,8 @@ setup:
       as: redis
 
 build:
-  web: ./web/Dockerfile
+  docker:
+    web: web/Dockerfile
 
 run:
-  web: ./init.sh db -- python manage.py runserver 0.0.0.0:8000
+  web: init.sh db -- python manage.py runserver 0.0.0.0:8000
