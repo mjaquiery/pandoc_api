@@ -100,3 +100,10 @@ With those files in place, the project should be runnable as simply as
 ```shell
 docker-compose up --build
 ```
+
+## Security
+
+Currently security is minimal. 
+A good approach may be to ask for an email to attach to a job request, 
+and to send a confirmation link to that email before executing a job.
+Unconfirmed jobs can be purged periodically, alongside collected outputs.
