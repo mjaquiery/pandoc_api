@@ -3,6 +3,7 @@ from django.views.generic import View
 from django.http import HttpRequest, HttpResponse
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from rest_framework.parsers import JSONParser
 from rest_framework.serializers import ValidationError
 
@@ -46,6 +47,15 @@ class ListJobs(rest_framework.views.APIView):
         """
         Submit a job to the system.
         """
+        # Check authorisation
+        try:
+            prefix, key = request.headers['Authorization'].split(' ')
+            if prefix.lower() != 'bearer' or not key or key not in settings.AUTH_KEYS:
+                return Response(status=401)
+        except BaseException as e:
+            logger.error(e)
+            return Response(status=401)
+
         data = JSONParser().parse(request)
 
         # Create document
@@ -65,7 +75,11 @@ class ListJobs(rest_framework.views.APIView):
                 f"Supported formats: {', '.join(formats)}."
             ))
 
-        job, job_created = Job.objects.get_or_create(document_id=document.id, format=output_format)
+        job, job_created = Job.objects.get_or_create(
+            document_id=document.id,
+            format=output_format,
+            auth_key=key
+        )
         if job_created or job.status == Status.ERRORED.value:
             logger.debug(f"Created {job}." if job_created else f"Retrying errored {job}.")
             convert_doc.delay(job.id)

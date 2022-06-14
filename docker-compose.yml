@@ -20,7 +20,7 @@ services:
 
   web:
     build: ./web
-    command: ["./init.sh", "db", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: ["./init.sh"]
     volumes:
       - ./web:/web
       - ./data/outputs:/outputs
@@ -30,6 +30,7 @@ services:
       - .env.postgres
       - .env.django
     environment:
+      PORT: "8000"
       DJANGO_BACKEND_WORKER: "True"
       REDIS_URL: "redis://redis:6379/0"
     depends_on:

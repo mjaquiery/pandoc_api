@@ -53,6 +53,7 @@ class Job(models.Model):
     id = models.BigAutoField(primary_key=True)
     time_created = models.DateTimeField(null=True)
     time_updated = models.DateTimeField(null=True)
+    auth_key = models.CharField(null=True, max_length=LENGTH_HASH)
 
     document = models.ForeignKey("Document", null=True, on_delete=models.DO_NOTHING)
     format = models.CharField(null=False, default=Format.HTML.value, max_length=LENGTH_HASH)

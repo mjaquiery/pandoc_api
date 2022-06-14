@@ -165,3 +165,6 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# List of valid auth keys, max length of each is 512
+AUTH_KEYS = os.environ.get('AUTH_KEYS', '').split(' ')
