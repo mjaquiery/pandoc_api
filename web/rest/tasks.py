@@ -73,4 +73,3 @@ def convert_doc(job_id):
         job.message = e
         job.time_end = timezone.now()
         job.save()
-

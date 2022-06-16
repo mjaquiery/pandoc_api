@@ -82,6 +82,7 @@ class Output(models.Model):
     time_updated = models.DateTimeField(null=True)
     job = models.ForeignKey("Job", on_delete=models.DO_NOTHING)
     format = models.CharField(default=Format.HTML.value, max_length=LENGTH_HASH)
+    file_removed = models.BooleanField(default=False)
 
     file_path = models.CharField(null=False, max_length=LENGTH_MESSAGE)
     time_last_downloaded = models.DateTimeField(null=True)

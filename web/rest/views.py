@@ -1,6 +1,6 @@
 import django.utils.timezone
 from django.views.generic import View
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -55,6 +55,18 @@ class ListJobs(rest_framework.views.APIView):
         except BaseException as e:
             logger.error(e)
             return Response(status=401)
+
+        # Clean up old files
+        old_outputs = Output.objects.filter(
+            file_removed=False,
+            file_path__isnull=False,
+            time_updated__gt=django.utils.timezone.now() - django.utils.timezone.timedelta(days=1)
+        )
+        for output in old_outputs:
+            logger.info(f"Cleanup removal of {output.file_path}")
+            os.unlink(output.file_path)
+            output.file_path = ''
+            output.file_removed = True
 
         data = JSONParser().parse(request)
 
@@ -113,6 +125,9 @@ class DownloadOutput(View):
         """
         path = os.path.join("/outputs", f"job_{job_id}", filename)
         output = Output.objects.get(file_path=path)
+        if output.file_removed:
+            raise Http404()
+
         output.time_last_downloaded = django.utils.timezone.now()
         output.download_count = output.download_count + 1
         output.save()
