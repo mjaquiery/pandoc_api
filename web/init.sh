@@ -13,7 +13,7 @@ while [ $PGUP -ne 0 ]; do
   sleep 1
 done
 
->&2 echo "Postgres ready - initalising"
+>&2 echo "Postgres ready - initialising"
 python manage.py makemigrations
 python manage.py migrate
 

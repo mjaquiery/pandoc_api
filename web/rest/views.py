@@ -64,7 +64,10 @@ class ListJobs(rest_framework.views.APIView):
         )
         for output in old_outputs:
             logger.info(f"Cleanup removal of {output.file_path}")
-            os.unlink(output.file_path)
+            try:
+                os.unlink(output.file_path)
+            except FileNotFoundError:
+                pass
             output.file_path = ''
             output.file_removed = True
 
