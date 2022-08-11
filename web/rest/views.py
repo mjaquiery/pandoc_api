@@ -60,7 +60,8 @@ class ListJobs(rest_framework.views.APIView):
         old_outputs = Output.objects.filter(
             file_removed=False,
             file_path__isnull=False,
-            time_updated__gt=django.utils.timezone.now() - django.utils.timezone.timedelta(days=1)
+            time_updated__lt=django.utils.timezone.now() - django.utils.timezone.timedelta(days=1),
+            time_last_downloaded__lt=django.utils.timezone.now() - django.utils.timezone.timedelta(days=1)
         )
         for output in old_outputs:
             logger.info(f"Cleanup removal of {output.file_path}")
