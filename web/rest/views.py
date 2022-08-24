@@ -100,7 +100,17 @@ class ListJobs(rest_framework.views.APIView):
             logger.debug(f"Created {job}." if job_created else f"Retrying errored {job}.")
             convert_doc.delay(job.id)
         else:
-            logger.debug(f"Returning existing {job}.")
+            try:
+                output = Output.objects.filter(job=job)
+                if all([o.file_removed for o in output]):
+                    logger.debug(f"All outputs removed for {job.id}")
+            except Output.DoesNotExist:
+                output = None
+                logger.debug(f"No output found for job {job.id}.")
+            if not output or output.file_removed:
+                logger.debug(f"Rerunning job {job.id} to refresh output.")
+                convert_doc.delay(job.id)
+
         serializer = JobSerializer(job)
         return Response(serializer.data, status=201)
 
