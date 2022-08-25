@@ -107,7 +107,7 @@ class ListJobs(rest_framework.views.APIView):
             except Output.DoesNotExist:
                 output = None
                 logger.debug(f"No output found for job {job.id}.")
-            if not output or output.file_removed:
+            if not output or all([o.file_removed for o in output]):
                 logger.debug(f"Rerunning job {job.id} to refresh output.")
                 convert_doc.delay(job.id)
 
