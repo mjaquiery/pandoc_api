@@ -4,6 +4,7 @@ from django.http import HttpRequest, HttpResponse, Http404
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.db.models import Q
 from rest_framework.parsers import JSONParser
 from rest_framework.serializers import ValidationError
 
@@ -34,7 +35,10 @@ class ListJobs(rest_framework.views.APIView):
         for job in jobs:
             data = {
                 **JobSerializer(job).data,
-                'output': OutputSerializer(Output.objects.filter(job_id=job.id), many=True).data
+                'output': OutputSerializer(
+                    Output.objects.filter(job_id=job.id, file_removed=False),
+                    many=True
+                ).data
             }
             for o in data['output']:
                 o.pop('job')
@@ -71,6 +75,15 @@ class ListJobs(rest_framework.views.APIView):
                 pass
             output.file_path = ''
             output.file_removed = True
+            if not Output.objects.filter(
+                    ~Q(id=output.id),
+                    file_removed=False,
+                    file_path__isnull=False,
+                    job=output.job
+            ).exists():
+                output.job.status = Status.REMOVED
+                output.job.save()
+            output.save()
 
         data = JSONParser().parse(request)
 

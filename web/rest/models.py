@@ -18,6 +18,7 @@ class Status(Enum):
     COMPLETE_WITH_WARNINGS = 'complete (with warnings)'
     CANCELLED = 'cancelled'
     ERRORED = 'errored'
+    REMOVED = 'removed'
 
 
 class Format(Enum):
