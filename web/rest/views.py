@@ -141,7 +141,7 @@ class ViewJob(rest_framework.views.APIView):
         serializer = JobSerializer(job)
         return Response({
             **serializer.data,
-            'output': OutputSerializer(Output.objects.filter(job=job), many=True).data
+            'output': OutputSerializer(Output.objects.filter(job=job, file_removed=False), many=True).data
         })
 
 
@@ -151,8 +151,9 @@ class DownloadOutput(View):
         Expose a file for downloading and record the download.
         """
         path = os.path.join("/outputs", f"job_{job_id}", filename)
-        output = Output.objects.get(file_path=path)
-        if output.file_removed:
+        try:
+            output = Output.objects.get(file_path=path, file_removed=False)
+        except Output.DoesNotExist:
             raise Http404()
 
         output.time_last_downloaded = django.utils.timezone.now()
