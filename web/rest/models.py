@@ -32,8 +32,8 @@ class Document(models.Model):
     time_created = models.DateTimeField(null=True)
     time_updated = models.DateTimeField(null=True)
 
-    hash = models.CharField(null=True, max_length=LENGTH_HASH)
-    content = models.BinaryField(null=False, unique=True)
+    hash = models.CharField(null=True, max_length=LENGTH_HASH, unique=True)
+    content = models.BinaryField(null=False, db_index=False)
 
     def save(self, *args, **kwargs):
         # Calculate hash
